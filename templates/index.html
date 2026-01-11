@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Library Management System</h1>
+            <p>Manage your book collection with ease</p>
+        </header>
+
+        <!-- Add/Edit Book Form -->
+        <section class="form-section">
+            <h2 id="form-title">Add New Book</h2>
+            <form id="book-form">
+                <input type="hidden" id="book-id">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="title">Title *</label>
+                        <input type="text" id="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="author">Author *</label>
+                        <input type="text" id="author" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="isbn">ISBN *</label>
+                        <input type="text" id="isbn" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="publication-date">Publication Date *</label>
+                        <input type="date" id="publication-date" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="genre">Genre *</label>
+                        <select id="genre" required>
+                            <option value="">Select Genre</option>
+                            <option value="Fiction">Fiction</option>
+                            <option value="Non-Fiction">Non-Fiction</option>
+                            <option value="Science">Science</option>
+                            <option value="Technology">Technology</option>
+                            <option value="History">History</option>
+                            <option value="Biography">Biography</option>
+                            <option value="Fantasy">Fantasy</option>
+                            <option value="Mystery">Mystery</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Thriller">Thriller</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="copies">Copies *</label>
+                        <input type="number" id="copies" value="1" min="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" rows="3"></textarea>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="available" checked>
+                        Available for borrowing
+                    </label>
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary" id="submit-btn">Add Book</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-btn" style="display:none;">Cancel</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Search Section -->
+        <section class="search-section">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Search by title or author...">
+                <button class="btn btn-primary" onclick="searchBooks()">Search</button>
+                <button class="btn btn-secondary" onclick="loadBooks()">Show All</button>
+            </div>
+        </section>
+
+        <!-- Books List -->
+        <section class="books-section">
+            <h2>Book Collection <span id="book-count" class="count-badge">0</span></h2>
+            <div id="books-container" class="books-grid">
+                <p class="loading">Loading books...</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const API_URL = window.location.origin + '/api/books';
+        let currentBookId = null;
+
+        // Load all books on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBooks();
+        });
+
+        // Form submission
+        document.getElementById('book-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bookData = {
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                isbn: document.getElementById('isbn').value,
+                publication_date: document.getElementById('publication-date').value,
+                genre: document.getElementById('genre').value,
+                copies: parseInt(document.getElementById('copies').value),
+                description: document.getElementById('description').value,
+                available: document.getElementById('available').checked
+            };
+
+            try {
+                let response;
+                if (currentBookId) {
+                    // Update existing book
+                    response = await fetch(`${API_URL}/${currentBookId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bookData)
+                    });
+                } else {
+                    // Create new book
+                    response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bookData)
+                    });
+                }
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showToast(data.message, 'success');
+                    resetForm();
+                    loadBooks();
+                } else {
+                    showToast(data.error || 'Operation failed', 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        });
+
+        // Cancel button
+        document.getElementById('cancel-btn').addEventListener('click', resetForm);
+
+        // Load all books
+        async function loadBooks() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayBooks(data.books);
+                    document.getElementById('book-count').textContent = data.count;
+                } else {
+                    showToast(data.error || 'Failed to load books', 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+                document.getElementById('books-container').innerHTML = 
+                    '<p class="error">Failed to load books. Please check your connection.</p>';
+            }
+        }
+
+        // Search books
+        async function searchBooks() {
+            const query = document.getElementById('search-input').value.trim();
+            
+            if (!query) {
+                showToast('Please enter a search term', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayBooks(data.books);
+                    document.getElementById('book-count').textContent = data.count;
+                    showToast(`Found ${data.count} book(s)`, 'success');
+                } else {
+                    showToast(data.error || 'Search failed', 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        }
+
+        // Display books in grid
+        function displayBooks(books) {
+            const container = document.getElementById('books-container');
+
+            if (books.length === 0) {
+                container.innerHTML = '<p class="empty-state">No books found. Add your first book!</p>';
+                return;
+            }
+
+            container.innerHTML = books.map(book => `
+                <div class="book-card ${!book.available ? 'unavailable' : ''}">
+                    <div class="book-header">
+                        <h3>${book.title}</h3>
+                        <span class="availability-badge ${book.available ? 'available' : 'unavailable'}">
+                            ${book.available ? '✓ Available' : '✗ Unavailable'}
+                        </span>
+                    </div>
+                    <p class="book-author">by ${book.author}</p>
+                    <div class="book-details">
+                        <p><strong>ISBN:</strong> ${book.isbn}</p>
+                        <p><strong>Genre:</strong> ${book.genre}</p>
+                        <p><strong>Published:</strong> ${formatDate(book.publication_date)}</p>
+                        <p><strong>Copies:</strong> ${book.copies}</p>
+                        ${book.description ? `<p class="book-description">${book.description}</p>` : ''}
+                    </div>
+                    <div class="book-actions">
+                        <button class="btn btn-small btn-primary" onclick="editBook('${book._id}')">Edit</button>
+                        <button class="btn btn-small btn-danger" onclick="deleteBook('${book._id}', '${book.title}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Edit book
+        async function editBook(bookId) {
+            try {
+                const response = await fetch(`${API_URL}/${bookId}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const book = data.book;
+                    currentBookId = bookId;
+
+                    document.getElementById('form-title').textContent = 'Edit Book';
+                    document.getElementById('title').value = book.title;
+                    document.getElementById('author').value = book.author;
+                    document.getElementById('isbn').value = book.isbn;
+                    document.getElementById('publication-date').value = book.publication_date;
+                    document.getElementById('genre').value = book.genre;
+                    document.getElementById('copies').value = book.copies;
+                    document.getElementById('description').value = book.description || '';
+                    document.getElementById('available').checked = book.available;
+                    document.getElementById('submit-btn').textContent = 'Update Book';
+                    document.getElementById('cancel-btn').style.display = 'inline-block';
+
+                    document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    showToast(data.error || 'Failed to load book', 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        }
+
+        // Delete book
+        async function deleteBook(bookId, bookTitle) {
+            if (!confirm(`Are you sure you want to delete "${bookTitle}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/${bookId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showToast(data.message, 'success');
+                    loadBooks();
+                } else {
+                    showToast(data.error || 'Failed to delete book', 'error');
+                }
+            } catch (error) {
+                showToast('Network error: ' + error.message, 'error');
+            }
+        }
+
+        // Reset form
+        function resetForm() {
+            currentBookId = null;
+            document.getElementById('book-form').reset();
+            document.getElementById('form-title').textContent = 'Add New Book';
+            document.getElementById('submit-btn').textContent = 'Add Book';
+            document.getElementById('cancel-btn').style.display = 'none';
+            document.getElementById('available').checked = true;
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        // Search on Enter key
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchBooks();
+            }
+        });
+    </script>
+</body>
+</html>
