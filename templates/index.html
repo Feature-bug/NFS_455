@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>📚 Library Management System</h1>
+            <h1>Library Management System</h1>
             <p>Manage your book collection with ease</p>
         </header>
 
@@ -39,7 +39,7 @@
                     
                     <div class="form-group">
                         <label for="publication-date">Publication Date *</label>
-                        <input type="date" id="publication-date" required>
+                        <input type="date" id="publication-date" required max="">
                     </div>
                 </div>
 
@@ -113,6 +113,10 @@
 
         // Load all books on page load
         document.addEventListener('DOMContentLoaded', () => {
+            // Set max date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('publication-date').setAttribute('max', today);
+            
             loadBooks();
         });
 

@@ -54,6 +54,14 @@ def create_book():
             if field not in data or not data[field]:
                 return jsonify({'error': f'{field} is required'}), 400
         
+        # Validate publication date is not in the future
+        try:
+            pub_date = datetime.fromisoformat(data['publication_date'])
+            if pub_date.date() > datetime.utcnow().date():
+                return jsonify({'error': 'Publication date cannot be in the future'}), 400
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
+        
         # Create book document
         book = {
             'title': data['title'],
@@ -137,6 +145,15 @@ def update_book(book_id):
         for field in allowed_fields:
             if field in data:
                 update_data[field] = data[field]
+        
+        # Validate publication date if being updated
+        if 'publication_date' in update_data:
+            try:
+                pub_date = datetime.fromisoformat(update_data['publication_date'])
+                if pub_date.date() > datetime.utcnow().date():
+                    return jsonify({'error': 'Publication date cannot be in the future'}), 400
+            except ValueError:
+                return jsonify({'error': 'Invalid date format'}), 400
         
         update_data['updated_at'] = datetime.utcnow().isoformat()
         
