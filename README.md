@@ -36,13 +36,13 @@ pip install -r requirements.txt
 python app.py
 ```
 
-The application will start on `http://localhost:5000`
+The application will start on `https://nfs-455-mongodb.onrender.com/`
 
 ### 3. Access the Application
 
 Open your browser and visit:
-- **Frontend UI**: http://localhost:5000
-- **API Base URL**: http://localhost:5000/api/books
+- **Frontend UI**: https://nfs-455-mongodb.onrender.com/
+- **API Base URL**: https://nfs-455-mongodb.onrender.com/
 
 ## 📚 Database Schema
 
@@ -100,7 +100,7 @@ Open your browser and visit:
 ## 🧪 Testing
 
 ### Using the Frontend
-1. Open http://localhost:5000 in your browser
+1. Open https://nfs-455-mongodb.onrender.com/ in your browser
 2. Use the form to add books
 3. View all books in the grid below
 4. Click "Edit" to modify a book
@@ -113,7 +113,7 @@ Import these endpoints:
 
 **Create Book:**
 ```
-POST http://localhost:5000/api/books
+POST https://nfs-455-mongodb.onrender.com//api/books
 Content-Type: application/json
 
 {
@@ -130,17 +130,17 @@ Content-Type: application/json
 
 **Get All Books:**
 ```
-GET http://localhost:5000/api/books
+GET https://nfs-455-mongodb.onrender.com//api/books
 ```
 
 **Get Single Book:**
 ```
-GET http://localhost:5000/api/books/<book_id>
+GET https://nfs-455-mongodb.onrender.com//api/books/<book_id>
 ```
 
 **Update Book:**
 ```
-PUT http://localhost:5000/api/books/<book_id>
+PUT https://nfs-455-mongodb.onrender.com//api/books/<book_id>
 Content-Type: application/json
 
 {
@@ -151,12 +151,12 @@ Content-Type: application/json
 
 **Delete Book:**
 ```
-DELETE http://localhost:5000/api/books/<book_id>
+DELETE https://nfs-455-mongodb.onrender.com//api/books/<book_id>
 ```
 
 **Search Books:**
 ```
-GET http://localhost:5000/api/books/search?q=gatsby
+GET https://nfs-455-mongodb.onrender.com//api/books/search?q=gatsby
 ```
 
 ## 📁 Project Structure
